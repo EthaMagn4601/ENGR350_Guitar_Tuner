@@ -3,9 +3,10 @@
 #include "ESP32Servo.h"
 
 #define MIC_PIN A0               
-#define SERVO_PIN 13             
-#define SETDOWNBUTTON_PIN 12
-#define SETUPBUTTON_PIN 13
+#define SERVO_PIN 13 
+#define SETTUNER A2            
+#define SETDOWNBUTTON_PIN A3
+#define SETUPBUTTON_PIN A4
 #define POWERBUTTON_PIN 15 
 #define NUM_STRINGS 6
 #define TUNE_STRINGS 6
@@ -23,9 +24,9 @@ float vImag[SAMPLES];
 
 const double targetOctaves[NUM_STRINGS] = {
     82.41, //Low E
-    110.00,// A
-    146.83,// D
-    196.00,// G
+    105.00,// A
+    152.00,// D
+    199.00,// G
     246.94,// B
     329.63,// High E
 };
@@ -48,12 +49,12 @@ ArduinoFFT<float> FFT = ArduinoFFT<float>(vReal, vImag, SAMPLES, SAMPLING_FREQUE
 void stringName(int stringIndex) {
     switch (stringIndex)
     {
-    case 0: Serial.println("Low E"); break; //Troubleshoot
-    case 1: Serial.println("A"); break; //Troubleshoot
-    case 2: Serial.println("D"); break; //Troubleshoot
-    case 3: Serial.println("G"); break; //Troubleshoot
-    case 4: Serial.println("B"); break; //Troubleshoot
-    case 5: Serial.println("High E"); break; //Troubleshoot
+    case 0: Serial.println("Low E"); break; //DEBUG
+    case 1: Serial.println("A"); break; //DEBUG
+    case 2: Serial.println("D"); break; //DEBUG
+    case 3: Serial.println("G"); break; //DEBUG
+    case 4: Serial.println("B"); break; //DEBUG
+    case 5: Serial.println("High E"); break; //DEBUG
     }
   }
 
@@ -74,8 +75,9 @@ void stopMotor() {
 void setup() {
     Serial.begin(115200);
     tuningMotor.attach(SERVO_PIN);
-    pinMode(SETUPBUTTON_PIN, INPUT); 
-    pinMode(SETDOWNBUTTON_PIN, INPUT); 
+    pinMode(SETUPBUTTON_PIN, INPUT_PULLUP); 
+    pinMode(SETDOWNBUTTON_PIN, INPUT_PULLUP); 
+    pinMode(SETTUNER, INPUT_PULLUP);
     pinMode(MIC_PIN, INPUT);
     stopMotor();
     delay(500);
@@ -102,51 +104,63 @@ void setup() {
 
 // }
 
+// void checkSet(){
+//   static unsigned long lastPressTime=0;
+//   const unsigned long debounceDelay=200;
 
-void checkTune(){
+//   if (millis() - lastPressTime> debounceDelay){
+//       if(digitalRead(SETTUNER) == LOW) {
+
+//       }
+//   }
+
+// }
+
+
+void checkTune() {
     static unsigned long lastPressTime = 0;
-    unsigned long currentTime = millis();
+    const unsigned long debounceDelay = 200; // 200ms debounce time
 
-    if (digitalRead(SETUPBUTTON_PIN) == LOW && !buttonPressed) {
-        if (currentTime - lastPressTime > 200) {  // Debounce
-            buttonPressed = true;
-            currentString = (currentString + 1) % NUM_STRINGS;
-            Serial.println("Tuning Up");
-            stringName(currentString);
-            lastPressTime = currentTime;
+    if (millis() - lastPressTime > debounceDelay) {
+        if (digitalRead(SETUPBUTTON_PIN) == LOW) {  // Button is pressed
+            lastPressTime = millis();  // Update last press time
+            currentString = (currentString + 1) % NUM_STRINGS;  // Cycle forward
+            Serial.print("Tuning Up -> Current String: ");
+            Serial.println(currentString);
         }
-    } else if (digitalRead(SETUPBUTTON_PIN) == HIGH) {
-        buttonPressed = false;
-    }
 
-//     if (digitalRead(SETDOWNBUTTON_PIN) == LOW &&!buttonPressed) {
-//     buttonPressed = true;
-//     currentString = (currentString - 1)% NUM_STRINGS;
-//     Serial.print("tuning down"); //Troubleshoot
-//     stringName(currentString);
-//     delay(300);
-
-// }
-//     if (digitalRead(SETDOWNBUTTON_PIN)== HIGH){
-//     buttonPressed= false;
-// }
-
+        if (digitalRead(SETDOWNBUTTON_PIN) == LOW) {  // If down button is pressed
+            lastPressTime = millis();
+            currentString = (currentString - 1 + NUM_STRINGS) % NUM_STRINGS;  // Safe decrement
+            Serial.print("Tuning Down -> Current String: ");
+            Serial.println(currentString);
+        }
+    //     if (digitalRead(SETTUNER) == LOW) {  
+    //       if (millis() - lastPressTime > debounceDelay) {  
+    //         lastSetPressTime = millis();
+    //         Serial.println("SET Button Pressed! Confirming selection...");
+    //         // Add any action you want when the SET button is pressed
+    //     }
+    // }
 }
+
+
 
 void adjustTuning(double freq, double targetFreq) {
     double tolerance = 3.0; 
   
     if (freq < targetFreq - tolerance) {
-      Serial.println("Tuning Up..."); //Troubleshoot
+      Serial.println("Tuning Up..."); //debug
       rotateClockwise();  // Increase tension
     } 
     else if (freq > targetFreq + tolerance) {
-      Serial.println("Tuning Down..."); //Troubleshoot
+      Serial.println("Tuning Down..."); //debug
       rotateCounterClockwise();  // Decrease tension
     } 
     else {
-      Serial.println("String In Tune!"); //Troubleshoot
+      Serial.println("String In Tune!"); //debug
       stopMotor();
+      delay(10000);
     }
 }
   
@@ -171,8 +185,8 @@ double getPeakFrequency() {
 
 
 void loop() {
-    checkTune();  // Check if tuning buttons are pressed
 
+    checkTune();
     // 1. Sample audio data
     for (int i = 0; i < SAMPLES; i++) {
         microseconds = micros();
@@ -196,14 +210,10 @@ void loop() {
         adjustTuning(freq, targetOctaves[currentString]);
         Serial.println(currentString);
     } else {
-        Serial.println("No valid frequency detected.");
+        Serial.println("No valid frequency detected.");//debug
     }
-    if (freq == 82.03) {
-        Serial.println("IM IN TUNE");
-        // delay(10000);
-    }  else{
-        delay(500);
-      }  // Short delay for stability
+
+  delay(500);
 }
 
 
