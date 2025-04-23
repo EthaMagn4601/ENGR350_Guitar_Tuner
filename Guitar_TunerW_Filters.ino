@@ -247,8 +247,9 @@ void loop() {
           Serial.print(targetOctaves[currentString]);
           Serial.print(" Hz | ");
           stringName(currentString);
-      }     
+           
           adjustTuning(freq, targetOctaves[currentString]);
+      }
     }else if (currentString == 3){
       if (freq > 120 && freq < 200) { // Guitar string range
           Serial.print("Detected: ");
