@@ -190,6 +190,16 @@ void adjustTuning(float freq, float targetFreq) {
         delay(3000);
     }
 }
+void printStatements(float freq, int currentString){
+    Serial.print("Detected: ");
+    Serial.print(freq);
+    Serial.print(" Hz | Target: ");
+    Serial.print(targetOctaves[currentString]);
+    Serial.print(" Hz | ");
+    stringName(currentString);
+    
+    adjustTuning(freq, targetOctaves[currentString]);
+}
 
 void loop() {
 
@@ -220,68 +230,28 @@ void loop() {
 
     if (currentString == 0){
       if (freq > 60 && freq < 110) { // Guitar string range
-          Serial.print("Detected: ");
-          Serial.print(freq);
-          Serial.print(" Hz | Target: ");
-          Serial.print(targetOctaves[currentString]);
-          Serial.print(" Hz | ");
-          stringName(currentString);
-          
-          adjustTuning(freq, targetOctaves[currentString]);
+        printStatements(freq, currentString);
       }
     }else if (currentString == 1){
       if (freq > 80 && freq < 160) { // Guitar string range
-          Serial.print("Detected: ");
-          Serial.print(freq);
-          Serial.print(" Hz | Target: ");
-          Serial.print(targetOctaves[currentString]);
-          Serial.print(" Hz | ");
-          stringName(currentString);
+        printStatements(freq, currentString);
       }     
           adjustTuning(freq, targetOctaves[currentString]);
     }else if (currentString == 2){
       if (freq > 100 && freq < 180) { // Guitar string range
-          Serial.print("Detected: ");
-          Serial.print(freq);
-          Serial.print(" Hz | Target: ");
-          Serial.print(targetOctaves[currentString]);
-          Serial.print(" Hz | ");
-          stringName(currentString);
-           
-          adjustTuning(freq, targetOctaves[currentString]);
+        printStatements(freq, currentString);
       }
     }else if (currentString == 3){
       if (freq > 120 && freq < 200) { // Guitar string range
-          Serial.print("Detected: ");
-          Serial.print(freq);
-          Serial.print(" Hz | Target: ");
-          Serial.print(targetOctaves[currentString]);
-          Serial.print(" Hz | ");
-          stringName(currentString);
-          
-          adjustTuning(freq, targetOctaves[currentString]);
+        printStatements(freq, currentString);
       }
     }else if (currentString == 4){
       if (freq > 200 && freq < 300) { // Guitar string range
-          Serial.print("Detected: ");
-          Serial.print(freq);
-          Serial.print(" Hz | Target: ");
-          Serial.print(targetOctaves[currentString]);
-          Serial.print(" Hz | ");
-          stringName(currentString);
-          
-          adjustTuning(freq, targetOctaves[currentString]);
+        printStatements(freq, currentString);
       }
     }else if (currentString == 5){
       if (freq > 280 && freq < 360) { // Guitar string range
-          Serial.print("Detected: ");
-          Serial.print(freq);
-          Serial.print(" Hz | Target: ");
-          Serial.print(targetOctaves[currentString]);
-          Serial.print(" Hz | ");
-          stringName(currentString);
-          
-          adjustTuning(freq, targetOctaves[currentString]);
+        printStatements(freq, currentString);
       }           
       else {
         Serial.print("Invalid frequency detected: ");
