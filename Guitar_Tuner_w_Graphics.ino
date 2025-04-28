@@ -1,31 +1,33 @@
 #include <Arduino.h>
 #include "ESP32Servo.h"
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
+#include <Adafruit_GFX.h>    
+#include <Adafruit_ST7789.h> 
 #include <SPI.h>
 
-// TFT Display Setup
+// TFT display setup
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
-// Guitar Tuner Hardware Definitions
+// Guitar tuner pin and sampling definitions
 #define MIC_PIN A0               
 #define SERVO_PIN 13 
 #define SETTUNER_PIN A2            
 #define SETDOWNBUTTON_PIN A3
 #define SETUPBUTTON_PIN A4
-#define POWERBUTTON_PIN 15 
 #define NUM_STRINGS 6
 #define SAMPLES 4096
 #define SAMPLING_FREQUENCY 10000
 
+// Global varible declaration
+unsigned int sampling_period_us; // sampling_period_us & microseconds must be unsigned int as a 32 
+unsigned int microseconds;       // bit memory is needed for the large value nature of these two variables
+
 Servo tuningMotor;
-unsigned int sampling_period_us;
-unsigned long microseconds;
 
 bool tunerGo = false;
 float samples[SAMPLES];
 float autocorrelation[SAMPLES/2];
 
+// Hz array for strings
 const float targetOctaves[NUM_STRINGS] = {
     82.41,   // Low E (E2)
     110.00,  // A (A2)
@@ -35,6 +37,7 @@ const float targetOctaves[NUM_STRINGS] = {
     333.00   // High E (E4)
 };
 
+// String name array
 const char* stringNames[NUM_STRINGS] = {
     "Low E (E2)",
     "A (A2)",
@@ -44,35 +47,41 @@ const char* stringNames[NUM_STRINGS] = {
     "High E (E4)"
 };
 
-int currentString = 0;
-
-// Motor Functions
+// Motor functions
 void rotateClockwise() {
     tuningMotor.attach(SERVO_PIN);
     tuningMotor.writeMicroseconds(1367);
-}
-  
+} 
 void rotateCounterClockwise() {
     tuningMotor.attach(SERVO_PIN);
     tuningMotor.writeMicroseconds(1600);
 }
-
 void stopMotor() {
     tuningMotor.detach();
 }
 
+int currentString = 0;
+
 void setup() {
     Serial.begin(115200);
     
-    // Initialize TFT display
+    // Turn on backlite
     pinMode(TFT_BACKLITE, OUTPUT);
     digitalWrite(TFT_BACKLITE, HIGH);
+    
+    // Turn on the TFT / I2C power supply
     pinMode(TFT_I2C_POWER, OUTPUT);
     digitalWrite(TFT_I2C_POWER, HIGH);
+    
+    // Delay for TFT power to initialize
     delay(10);
-    tft.init(135, 240); // Init ST7789 240x135
-    tft.setRotation(3);
+
+    // Initialize TFT
+    tft.init(135, 240); 
+    tft.setRotation(1);
     tft.fillScreen(ST77XX_BLACK);
+
+    Serial.println(F("Initialized"));
     
     // Initialize tuner hardware
     tuningMotor.attach(SERVO_PIN);
@@ -185,7 +194,7 @@ float autocorrelationPitchDetection() {
     if (ratio > 1.9 && ratio < 2.1) {
         detectedFreq /= ratio;
     }
-    else if (ratio > 0.45 && ratio < 0.55) {
+    else if (ratio > 0.45 && ratio < 0.55) { 
         detectedFreq /= ratio;
     }
     
@@ -203,7 +212,11 @@ void checkGo() {
             lastPressTime = millis();
             tunerGo = !tunerGo; // Toggle tuning mode
             updateDisplay();
-            Serial.println(tunerGo ? "Tuner Go!" : "Tuner Stopped");
+            if (tunerGo){
+                Serial.println("Tuner Go!");
+            } else {
+                Serial.println("Tuner Stopped");
+            }
         }
     }
 }
@@ -328,7 +341,7 @@ void loop() {
         // Check if frequency is within expected range for current string
         bool validFrequency = false;
         switch (currentString) {
-            case 0: validFrequency = (freq > 60 && freq < 110); break;
+            case 0: validFrequency = (freq > 40 && freq < 110); break;
             case 1: validFrequency = (freq > 80 && freq < 160); break;
             case 2: validFrequency = (freq > 100 && freq < 180); break;
             case 3: validFrequency = (freq > 120 && freq < 200); break;
