@@ -1,3 +1,10 @@
+// Guitar Tuner Engr 350 Project
+// Group 16: Ethan Magnante, Joshua Woolcock
+// 4/29/2025
+// This Code implements an automatic guitar tuner using a ESP32-s3, a servo motor to turn tuning pegs, and a microphone to detect pitch.
+// It includes a TFT display for user interaction and feedback.
+// Autocorrelation is use to estimate the pitch of the plucked strings, and the servo motor adjusts the tension until the target frequeuncy is reached.
+
 #include <Arduino.h>
 #include "ESP32Servo.h"
 #include <Adafruit_GFX.h>    
