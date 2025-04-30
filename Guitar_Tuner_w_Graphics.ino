@@ -1,10 +1,3 @@
-// Guitar Tuner Engr 350 Project
-// Group 16: Ethan Magnante, Joshua Woolcock
-// 4/29/2025
-// This Code implements an automatic guitar tuner using a ESP32-s3, a servo motor to turn tuning pegs, and a microphone to detect pitch.
-// It includes a TFT display for user interaction and feedback.
-// Autocorrelation is use to estimate the pitch of the plucked strings, and the servo motor adjusts the tension until the target frequeuncy is reached.
-
 #include <Arduino.h>
 #include "ESP32Servo.h"
 #include <Adafruit_GFX.h>    
@@ -23,6 +16,10 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 #define NUM_STRINGS 6
 #define SAMPLES 4096
 #define SAMPLING_FREQUENCY 10000
+#define slow_tune_up 1430
+#define slow_tune_down 1570
+#define norm_tune_up 1590
+#define norm_tune_down 1410
 
 // Global varible declaration
 unsigned int sampling_period_us; // sampling_period_us & microseconds must be unsigned int as a 32 
@@ -54,14 +51,16 @@ const char* stringNames[NUM_STRINGS] = {
     "High E (E4)"
 };
 
+int tuning_speed = 1500;
+
 // Motor functions
 void rotateClockwise() {
     tuningMotor.attach(SERVO_PIN);
-    tuningMotor.writeMicroseconds(1367);
+    tuningMotor.writeMicroseconds(tuning_speed);//servo tune down
 } 
 void rotateCounterClockwise() {
     tuningMotor.attach(SERVO_PIN);
-    tuningMotor.writeMicroseconds(1600);
+    tuningMotor.writeMicroseconds(tuning_speed);// Servo tune up
 }
 void stopMotor() {
     tuningMotor.detach();
@@ -257,29 +256,33 @@ void adjustTuning(float freq, float targetFreq) {
     // Calculate how far off we are in percent
     float percentDiff = abs(freq - targetFreq) / targetFreq * 100;
     
-    if (percentDiff > 10.0) { // If way off
+    if (percentDiff < 4.0) { // If way off
         if (freq < targetFreq) {
             tft.fillScreen(ST77XX_BLACK);
             tft.setTextColor(ST77XX_CYAN);
             tft.setTextSize(2);
             tft.setCursor(0, 0);
             tft.println("Tuning UP (FAST)");
-            tuningMotor.writeMicroseconds(1700);
+            tuning_speed = slow_tune_up;
+            
+            rotateCounterClockwise();
         } else {
             tft.fillScreen(ST77XX_BLACK);
             tft.setTextColor(ST77XX_CYAN);
             tft.setTextSize(2);
             tft.setCursor(0, 0);
             tft.println("Tuning DOWN (FAST)");
-            tuningMotor.writeMicroseconds(1367);
+            tuning_speed = slow_tune_down;
+            rotateClockwise();
         }
     } 
-    else if (freq < targetFreq - tolerance) {
+    if (freq < targetFreq - tolerance) {
         tft.fillScreen(ST77XX_BLACK);
         tft.setTextColor(ST77XX_BLUE);
         tft.setTextSize(2);
         tft.setCursor(0, 0);
         tft.println("Tuning UP...");
+        tuning_speed = norm_tune_down;
         rotateClockwise();
     } 
     else if (freq > targetFreq + tolerance) {
@@ -288,6 +291,7 @@ void adjustTuning(float freq, float targetFreq) {
         tft.setTextSize(2);
         tft.setCursor(0, 0);
         tft.println("Tuning DOWN...");
+        tuning_speed = norm_tune_up;
         rotateCounterClockwise();
     } 
     else {
